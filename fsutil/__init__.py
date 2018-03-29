@@ -27,6 +27,11 @@ from .cat import (
     Cat
 )
 
+from .cmp import (
+    Entry,
+    LineDiff,
+)
+
 __all__ = [
     "FSUtilError",
     "NotMountPoint",
@@ -52,5 +57,9 @@ __all__ = [
     "LockTimeout",
     "NoData",
     "NoSuchFile",
-    "Cat"
+    "Cat",
+
+    "Entry", 
+    "LineDiff",
+
 ]

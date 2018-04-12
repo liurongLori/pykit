@@ -7,8 +7,6 @@ import uuid
 import errno
 import copy
 
-from random import Random
-from pykit import http
 from pykit import mime
 
 class MultipartError(Exception):
@@ -19,77 +17,59 @@ class InvalidArgumentError(MultipartError):
     pass
 
 
-class SendFieldError(MultipartError):
-    pass
+class MultipartRequest(object):
 
+    def __init__(self):
+        self.boundary = uuid.uuid4().hex
 
-class PostClient(object):
-    def __init__(self, host, port, headers=None, timeout=60):
-        self.host = host
-        self.port = port
-        self.is_requested = False
-        self.body_size = None
-        self.has_content_length = True
+    def make_headers(self, key_value_pair, headers=None):
 
         if headers is None:
-            self.headers = {}
+            headers = {}
         else:
-            self.headers = copy.deepcopy(headers)
+            headers = copy.deepcopy(headers)
 
-        self.http_client = http.Client(self.host, self.port)
-        self.boundary = uuid.uuid4().hex
-        self.headers['Content-Type'] = 'multipart/form-data;'+'boundary='+self.boundary
+        body_size = None
 
-    def read_response(self):
-        status, headers = self.http_client.read_response()
-        result = {
-                    'status': status,
-                    'headers': headers,
-                    'body': self._read_body
-                 }
+        headers['Content-Type'] = 'multipart/form-data;' + \
+            'boundary='+self.boundary
 
-        return result
+        if 'Content-Length' not in headers:
+            body_size = self._get_body_size(key_value_pair)
+            headers['Content-Length'] = body_size
 
-    def send_fields(self, key_value_pair):
+        return headers
 
-        if self.has_content_length is False and self.is_requested is True:
-            raise SendFieldError('can not repeat to send field {x}'
-                              .format(x=key_value_pair))
-
-        if self.is_requested is False:
-            self.body_size = self._get_body_size(key_value_pair)
-            self._request()
+    def make_body_reader(self, key_value_pair):
 
         for field_name, field in key_value_pair.items():
-            self._send_one_field(field_name, field)
+            value, headers = field['value'], field.get('headers', {})
 
-        self.http_client.send_body('--'+self.boundary+'--')
+            str_header = self._get_one_field_header(
+                field_name, value, headers)
 
-    def _send_one_field(self, name, field):
-        value, headers = field['value'], field.get('headers', {})
+            yield str_header
 
-        field_header = self._get_one_field_header(name, value, headers)
+            if isinstance(value, str):
 
-        if isinstance(value, str):
+                yield value
+            elif isinstance(value, list):
+                file_path = value[0]
 
-            self.http_client.send_body(field_header)
-            self.http_client.send_body(value)
+                with open(file_path) as f:
+                    while True:
+                        buf = f.read(1024*1024)
+                        if buf == '':
+                            break
 
-        elif isinstance(value, list):
-            file_path = value[0]
+                        yield buf
+            else:
+                raise InvalidArgumentError(
+                    'value is invalid {x}'.format(x=value))
 
-            self.http_client.send_body(field_header)
+            yield '\r\n'
 
-            with open(file_path) as f:
-                while True:
-                    has_read = f.read(1024*1024)
-                    if has_read == '':
-                        break
-                    self.http_client.send_body(has_read)
-        else:
-            raise InvalidArgumentError('value is invalid {x}'.format(x=value))
-
-        self.http_client.send_body('\r\n')
+        yield '--'+self.boundary+'--'
 
     def _get_one_field_header(self, name, value, headers):
         headers = copy.deepcopy(headers)
@@ -105,54 +85,42 @@ class PostClient(object):
                 file_name = os.path.basename(file_path)
 
             field_header.append('Content-Dispostion: form-data;'
-                            + 'name='+name+ ';filename=' + file_name)
+                                + 'name=' + name + ';filename=' + file_name)
 
             if 'Content-Type' not in headers:
                 file_type = mime.get_by_filename(file_name)
                 headers['Content-Type'] = str(file_type)
+        else:
+            raise InvalidArgumentError(
+                'value is invalid {x}'.format(x=value))
 
         for ki, vi in headers.items():
             field_header.append(ki+': '+vi)
 
-        field_header.extend([''] * 2)
+        field_header.extend(['']*2)
         return '\r\n'.join(field_header)
 
     def _get_one_field_size(self, name, field):
         value, headers = field['value'], field.get('headers', {})
-        field_size = 0
 
-        field_header = self._get_one_field_header(name, value, headers)
-
-        field_size += len(field_header)
+        field_size = len(self._get_one_field_header(name, value, headers))
+        file_path = value[0]
 
         if isinstance(value, str):
             field_size += len(value)
         elif isinstance(value, list):
-            field_size += os.path.getsize(value[0])
+            field_size += os.path.getsize(file_path)
 
         field_size += len('\r\n')
 
         return field_size
 
     def _get_body_size(self, key_value_pair):
-        real_size = 0
+        body_size = 0
 
-        for n, f in key_value_pair.items():
-            real_size += self._get_one_field_size(n, f)
+        for name, field in key_value_pair.items():
+            body_size += self._get_one_field_size(name, field)
 
-        real_size += len('--'+self.boundary+'--')
+        body_size += len('--'+self.boundary+'--')
 
-        return real_size
-
-    def _request(self):
-        self.is_requested = True
-
-        if 'Content-Length' not in self.headers:
-            self.headers['Content-Length'] = self.body_size
-            self.has_content_length = False
-
-        self.http_client.send_request(
-                '/', 'POST', headers=self.headers)
-
-    def _read_body(self, size):
-        return self.http_client.read_body(size)
+        return body_size

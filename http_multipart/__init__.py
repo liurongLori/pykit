@@ -1,7 +1,7 @@
 from .client import (
-    PostClient
+    MultipartRequest
 )
 
 __all__ = [
-    'PostClient'
+    'MultipartRequest'
 ]

@@ -8,13 +8,13 @@
 - [Description](#description)
 - [Exception](#exceptions)
   - [httpmultipart.MultipartError](#httpmultipartmultiparterror)
-  - [httpmultipart.InvalidArugumentError](#httpmultipartinvalidArgumenteroor)
+  - [httpmultipart.InvalidArgumentError](#httpmultipartinvalidArgumenterror)
 - [Constants](#constants)
   - [httpmultipart.MultipartObject.boundary](#httpmultipartmultipartobjectboundary)
 - [Classes](#classes)
   - [httpmultipart.MultipartObject](httpmultipartmultipartobject)
 - [Methods](#methods)
-  - [httpmultipart.make_headers](#httomultipartmake_headers)
+  - [httpmultipart.make_headers](#httpmultipartmake_headers)
   - [httpmultipart.make_body_reader](#httpmultipartmake_body_reader)
 - [Author](#author)
 - [Copyright and License](#copyright-and-license)
@@ -110,16 +110,17 @@ print httpmultipart.make_headers(key_value_pair, header)
 **arguments**:
 
 -  `key_value_pair`:
-   is a dict
+   a `dict`(field_name, filed) is used in body after multipart encoding
 -  `headers`:
-   is a dict
+   a `dict`(header_name, headers_value) of http request headers
+   It's a default argument and its default value is None
 
 **return**:
 dict about headers
 
 `httpmultipart.MultipartObject.make_body_reader`
 
-Return a body according to the key_value_pair
+Return a body after multipart encoding according to the key_value_pair
 
 Examples:
 ```
@@ -133,10 +134,10 @@ print ''.join(data)
 **arguments**:
 
 -  `key_value_pair`:
-   is a dict
+   a `dict`(field_name, filed) is used in body after multipart encoding
 
 **return**:
-generator about body
+generator about body after multipart encoding
 
 #   Author
 

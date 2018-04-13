@@ -73,8 +73,8 @@ class MultipartObject(object):
         field_header = ['--{b}'.format(b=self.boundary)]
 
         if isinstance(value, str):
-            field_header.append('Content-Dispostion:' + \
-            'form-data;name={n}'.format(n=name))
+            arr = 'Content-Dispostion: form-data;name={n}'.format(n=name)
+            field_header.append(arr)
 
         elif isinstance(value, list):
             file_path, file_name = (value + [None])[:2]
@@ -82,8 +82,8 @@ class MultipartObject(object):
             if file_name is None:
                 file_name = os.path.basename(file_path)
 
-            field_headers.append('Content-Dispostion:' + \
-                   'form-data;name={n};filename={fn}'.format(n=name, fn=file_name))
+            arr = 'Content-Dispostion: form-data;name={n};filename={fn}'.format(n=name, fn=file_name)
+            field_header.append(arr)
 
             if 'Content-Type' not in headers:
                 file_type = mime.get_by_filename(file_name)

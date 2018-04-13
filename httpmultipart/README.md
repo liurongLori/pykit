@@ -1,0 +1,149 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+#   Table of Content
+
+- [Name](#name)
+- [Status](#status)
+- [Synopsis](#synopsis)
+- [Description](#description)
+- [Exception](#exceptions)
+  - [httpmultipart.MultipartError](#httpmultipartmultiparterror)
+  - [httpmultipart.InvalidArugumentError](#httpmultipartinvalidArgumenteroor)
+- [Constants](#constants)
+  - [httpmultipart.MultipartObject.boundary](#httpmultipartmultipartobjectboundary)
+- [Classes](#classes)
+  - [httpmultipart.MultipartObject](httpmultipartmultipartobject)
+- [Methods](#methods)
+  - [httpmultipart.make_headers](#httomultipartmake_headers)
+  - [httpmultipart.make_body_reader](#httpmultipartmake_body_reader)
+- [Author](#author)
+- [Copyright and License](#copyright-and-license)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
+#   Name
+
+httpmultipart
+
+#   Status
+
+The library is considered production ready.
+
+#   Synopsis
+
+```python
+from pykit import httpmultipart
+
+headers = {}
+
+key_value_pair = {}
+
+print httpmultipart.make_headers(key_value_pair, header)
+```
+
+```python
+from pykit import httpmultipart
+
+key_value_pair = {}
+
+body_reader = httpmultipart.make_body_reader(key_value_pair)
+data = []
+
+for body in body_reader:
+    data.append(body)
+
+print ''.join(data)
+```
+
+#   Description
+
+This module provide some util methods to get multipart headers and body.
+
+#   Exceptions
+
+##  httpmultipart.MultipartError
+
+**syntax**:
+`httpmultipart.MultipartError`
+
+The base class of the other exceptions in this module.
+It is a subclass of `Exception`
+
+##  httpmultipart.InvalidArgumentError
+
+**syntax**:
+`httpmultipart.InvalidArgumentError`
+
+A subclass of `MultipartError`
+Raise if value is not a str or a list
+
+#   Constants
+
+##  httpmultipart.MultipartObject.boundary
+
+**syntax**:
+`httpmultipart.MultipartObject.boundary`
+
+Multipart body need boundary
+
+#   Classes
+
+##  httpmultipart.MultipartObject
+
+**syntax**:
+`http.MultipartObject()`
+
+#   Methods
+
+##  httpmultipart.MultipartObject.make_headers
+##  httpmultipart.MultipartObject.make_body_reader
+
+**syntax**:
+`httpmultipart.MultipartObject.make_headers`
+
+Return a header according to the key_value_pair and headers
+
+Examples:
+```
+print httpmultipart.make_headers(key_value_pair, header)
+```
+**arguments**:
+
+-  `key_value_pair`:
+   is a dict
+-  `headers`:
+   is a dict
+
+**return**:
+dict about headers
+
+`httpmultipart.MultipartObject.make_body_reader`
+
+Return a body according to the key_value_pair
+
+Examples:
+```
+body_reader = httpmultipart.make_body_reader(key_value_pair)
+data = []
+
+for body in body_reader:
+    data.append(body)
+print ''.join(data)
+```
+**arguments**:
+
+-  `key_value_pair`:
+   is a dict
+
+**return**:
+generator about body
+
+#   Author
+
+Ting Lv(吕婷) <ting.lv@baishancloud.com>
+
+#   Copyright and License
+
+The MIT License (MIT)
+
+Copyright (c) 2017 Ting Lv(吕婷) <ting.lv@baishancloud.com>

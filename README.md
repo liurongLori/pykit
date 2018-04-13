@@ -54,6 +54,7 @@ There is a `README.md` for each module.
 | [fsutil](fsutil)               | File-system Utilities                                                                 |
 | [heap](heap)                   | Min heap                                                                              |
 | [http](http)                   | HTTP/1.1 client                                                                       |
+| [httpmultipart](httpmultipart) | Utility functions to make headers or make body reader about multipart                 |
 | [humannum](humannum)           | Convert number to human readable number string                                        |
 | [jobq](jobq)                   | Process serial of input elements with several functions concurrently and sequentially |
 | [logutil](logutil)             | Utility functions to create logger or make log message                                |

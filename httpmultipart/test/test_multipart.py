@@ -5,6 +5,7 @@ import unittest
 import copy
 
 from pykit import httpmultipart
+from pykit import fsutil
 
 
 class TestMultipart(unittest.TestCase):
@@ -22,8 +23,8 @@ class TestMultipart(unittest.TestCase):
                 },
                 {
                     'Content-Length': 998,
-                    'Content-Type': 'multipart/form-data;' + \
-                            'boundary={b}'.format(b=self.test_multipart.boundary)
+                    'Content-Type': 'multipart/form-data;' +
+                    'boundary={b}'.format(b=self.test_multipart.boundary)
                 }
             ],
             [
@@ -32,8 +33,8 @@ class TestMultipart(unittest.TestCase):
                 },
                 {
                     'Content-Length': 1000,
-                    'Content-Type': 'multipart/form-data;' + \
-                            'boundary={b}'.format(b=self.test_multipart.boundary)
+                    'Content-Type': 'multipart/form-data;' +
+                    'boundary={b}'.format(b=self.test_multipart.boundary)
                 }
             ],
             [
@@ -41,21 +42,38 @@ class TestMultipart(unittest.TestCase):
                     'Content-Type': 'application/octet-stream'
                 },
                 {
-                    'Content-Length': 914,
-                    'Content-Type': 'multipart/form-data;' + \
-                            'boundary={b}'.format(b=self.test_multipart.boundary)
+                    'Content-Length': 925,
+                    'Content-Type': 'multipart/form-data;' +
+                    'boundary={b}'.format(b=self.test_multipart.boundary)
                 }
             ],
             [
                 None,
                 {
-                    'Content-Length': 914,
-                    'Content-Type': 'multipart/form-data;' + \
-                            'boundary={b}'.format(b=self.test_multipart.boundary)
+                    'Content-Length': 925,
+                    'Content-Type': 'multipart/form-data;' +
+                    'boundary={b}'.format(b=self.test_multipart.boundary)
                 }
             ]
         ]
 
+        fsutil.write_file(
+            '/root/tmp/a.txt',
+            '''
+                使命：Better Internet ，Better life
+                愿景：成为全球受人尊敬的科技公司；最具创新力；最佳雇主
+                未来白山的特质：渴求变革；让创新超越客户想象；全球化；真诚、并始终如一
+                信条：以用户为中心，其他一切水到渠成；专心将一件事做到极致；越快越好
+            '''
+        )
+        fsutil.write_file(
+            '/root/tmp/b.txt',
+            '''
+                12343564343rfe
+                fdf4erguu38788894hf
+                12rfhfvh8876w91908777yfj
+            '''
+        )
         key_value_pair = {
             'metadata1':
             {
@@ -63,12 +81,12 @@ class TestMultipart(unittest.TestCase):
             },
             'metadata2':
             {
-                'value': ['/root/Study/a.txt', 'a.txt'],
-                          'headers': {'Content-Type': 'application/octet-stream'}
+                'value': ['/root/tmp/a.txt', 'a.txt'],
+                'headers': {'Content-Type': 'application/octet-stream'}
             },
             'metadata3':
             {
-                'value': ['/root/Study/b.txt']
+                'value': ['/root/tmp/b.txt']
             },
         }
         for h in case:
@@ -78,6 +96,23 @@ class TestMultipart(unittest.TestCase):
             )
 
     def test_body(self):
+        fsutil.write_file(
+            '/root/tmp/a.txt',
+            '''
+                使命：Better Internet ，Better life
+                愿景：成为全球受人尊敬的科技公司；最具创新力；最佳雇主
+                未来白山的特质：渴求变革；让创新超越客户想象；全球化；真诚、并始终如一
+                信条：以用户为中心，其他一切水到渠成；专心将一件事做到极致；越快越好
+            '''
+        )
+        fsutil.write_file(
+            '/root/tmp/b.txt',
+            '''
+                12343564343rfe
+                fdf4erguu38788894hf
+                12rfhfvh8876w91908777yfj
+            '''
+        )
         case = [
             [
                 {
@@ -96,14 +131,14 @@ class TestMultipart(unittest.TestCase):
                 {
                     'metadata2':
                     {
-                        'value': ['/root/Study/a.txt', 'a.txt'],
+                        'value': ['/root/tmp/a.txt', 'a.txt'],
                         'headers': {'Content-Type': 'application/octet-stream'}
                     }
                 },
                 [
                     '--{b}'.format(b=self.test_multipart.boundary),
-                    'Content-Dispostion: form-data;name=metadata2;' \
-                                         + 'filename=a.txt',
+                    'Content-Dispostion: form-data;name=metadata2;'
+                    + 'filename=a.txt',
                     'Content-Type: application/octet-stream',
                     ''
                 ]
@@ -112,13 +147,13 @@ class TestMultipart(unittest.TestCase):
                 {
                     'metadata3':
                     {
-                        'value': ['/root/Study/b.txt']
+                        'value': ['/root/tmp/b.txt']
                     }
                 },
                 [
                     '--{b}'.format(b=self.test_multipart.boundary),
-                    'Content-Dispostion: form-data;name=metadata3;' \
-                                         + 'filename=b.txt',
+                    'Content-Dispostion: form-data;name=metadata3;'
+                    + 'filename=b.txt',
                     'Content-Type: text/plain',
                     ''
                 ]

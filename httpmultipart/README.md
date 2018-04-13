@@ -111,6 +111,20 @@ print httpmultipart.make_headers(key_value_pair, header)
 
 -  `key_value_pair`:
    a `dict`(field_name, filed) is used in body after multipart encoding
+
+   - `field_name`:
+   It's a str that represents each field name
+
+   - `field`
+   It's a dict, and the dict includes both the value and headers elements,
+   value can be a str or a list, str refers to the field being uploaded as a
+   str, and the `list`(file_path, file_name) indicates that the field is
+   uploaded as a file
+     - `file_path`:
+     upload the path to the file
+     - `file_name`:
+     upload the name about the file, the argument can also be None
+
 -  `headers`:
    a `dict`(header_name, headers_value) of http request headers
    It's a default argument and its default value is None
@@ -135,6 +149,19 @@ print ''.join(data)
 
 -  `key_value_pair`:
    a `dict`(field_name, filed) is used in body after multipart encoding
+
+   - `field_name`:
+   It's a str that represents each field name
+
+   - `field`
+   It's a dict, and the dict includes both the value and headers elements,
+   value can be a str or a list, str refers to the field being uploaded as a
+   str, and the `list`(file_path, file_name) indicates that the field is
+   uploaded as a file
+     - `file_path`:
+     upload the path to the file
+     - `file_name`:
+     upload the name about the file,the argument can also be None
 
 **return**:
 generator about body after multipart encoding

@@ -6,7 +6,7 @@
 - [Status](#status)
 - [Synopsis](#synopsis)
 - [Description](#description)
-- [Exception](#exceptions)
+- [Exception](#exception)
   - [httpmultipart.MultipartError](#httpmultipartmultiparterror)
   - [httpmultipart.InvalidArgumentError](#httpmultipartinvalidArgumenterror)
 - [Constants](#constants)
@@ -126,7 +126,6 @@ Multipart body need boundary
 #   Methods
 
 ##  httpmultipart.MultipartObject.make_headers
-##  httpmultipart.MultipartObject.make_body_reader
 
 **syntax**:
 `httpmultipart.MultipartObject.make_headers`
@@ -135,34 +134,46 @@ Return a header according to the key_value_pair and headers
 
 Examples:
 ```
-print httpmultipart.make_headers(key_value_pair, header)
+print httpmultipart.make_headers(key_value_pair, headers)
 ```
 **arguments**:
 
 -  `key_value_pair`:
-   a `dict`(`field_name`, `filed`) is used in body after multipart encoding
+   a `dict`{`field_name`: `filed`} is used in body after multipart encoding
 
    - `field_name`:
    It's a str that represents each field name
 
-   - `field`
-   It's a dict, and the dict includes both the value and headers elements,
-   value can be a str or a list, str refers to the field being uploaded as a
-   str, and the `list`(`file_path`, `file_name`) indicates that the field is
-   uploaded as a file; headers elements must contain Content-Disposition,and if the file
-   is uploaded, it must also have Content-Type
-     - `file_path`:
-     upload the path to the file
-     - `file_name`:
-     upload the name about the file, the argument can also be None
+   - `field`:
+   The field is a `dict`{`value`: a str or a list, `headers':
+   {`field_header_name`:`field_header_value`}} :
+
+     -`value`:
+     The value can be a str or a list, str refers to the field being uploaded
+     as a str, and the `list`(`file_path`, `file_name`)indicates that the field
+     is uploaded as a file
+
+       -`file_path`:
+       upload the path to the file
+
+       -`file_name`:
+       upload the name about the file, the argument can also be None
+
+     -`headers`:
+     The headers is a `dict`(`field_header_name`, `field_header_value`),it
+     contains user defined headers and the required headers, such as
+     'Content-Disposition' and 'Content-Type'
 
 -  `headers`:
-   a `dict`(`header_name`, `header_value`) of http request headers
+   a `dict`{`header_name`: `header_value`} of http request headers
    It's a default argument and its default value is None
 
 **return**:
 dict about headers
 
+##  httpmultipart.MultipartObject.make_body_reader
+
+**syntax**
 `httpmultipart.MultipartObject.make_body_reader`
 
 Return a body after multipart encoding according to the key_value_pair
@@ -179,21 +190,30 @@ print ''.join(data)
 **arguments**:
 
 -  `key_value_pair`:
-   a `dict`(`field_name`, `filed`) is used in body after multipart encoding
+   a `dict`{`field_name`: `field`} is used in body after multipart encoding
 
    - `field_name`:
    It's a str that represents each field name
 
-   - `field`
-   It's a dict, and the dict includes both the value and headers elements,
-   value can be a str or a list, str refers to the field being uploaded as a
-   str, and the `list`(`file_path`, `file_name`) indicates that the field is
-   uploaded as a file; headers elements must contain Content-Disposition,and if the file
-   is uploaded, it must also have Content-Type
-     - `file_path`:
-     upload the path to the file
-     - `file_name`:
-     upload the name about the file,the argument can also be None
+   - `field`:
+   The field is a `dict`{`value`: a str or a list, `headers':
+   {`field_header_name`:`field_header_value`}} :
+
+     -`value`:
+     The value can be a str or a list, str refers to the field being uploaded
+     as a str, and the `list`(`file_path`, `file_name`)indicates that the field
+     is uploaded as a file
+
+       -`file_path`:
+       upload the path to the file
+
+       -`file_name`:
+       upload the name about the file, the argument can also be None
+
+     -`headers`:
+     The headers is a `dict`(`field_header_name`, `field_header_value`),it
+     contains user defined headers and the required headers, such as
+     'Content-Disposition' and 'Content-Type'
 
 **return**:
 generator about body after multipart encoding

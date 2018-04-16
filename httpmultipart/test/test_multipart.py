@@ -12,9 +12,9 @@ class TestMultipart(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(TestMultipart, self).__init__(*args, **kwargs)
 
-        self.test_multipart = httpmultipart.MultipartObject()
-
     def test_headers(self):
+        test_multipart = httpmultipart.MultipartObject()
+
         case = [
             [
                 {
@@ -23,8 +23,8 @@ class TestMultipart(unittest.TestCase):
                 },
                 {
                     'Content-Length': 998,
-                    'Content-Type': 'multipart/form-data;' +
-                    'boundary={b}'.format(b=self.test_multipart.boundary)
+                    'Content-Type': 'multipart/form-data; ' +
+                        'boundary={b}'.format(b=test_multipart.boundary)
                 }
             ],
             [
@@ -33,8 +33,8 @@ class TestMultipart(unittest.TestCase):
                 },
                 {
                     'Content-Length': 1000,
-                    'Content-Type': 'multipart/form-data;' +
-                    'boundary={b}'.format(b=self.test_multipart.boundary)
+                    'Content-Type': 'multipart/form-data; ' +
+                        'boundary={b}'.format(b=test_multipart.boundary)
                 }
             ],
             [
@@ -42,17 +42,17 @@ class TestMultipart(unittest.TestCase):
                     'Content-Type': 'application/octet-stream'
                 },
                 {
-                    'Content-Length': 925,
-                    'Content-Type': 'multipart/form-data;' +
-                    'boundary={b}'.format(b=self.test_multipart.boundary)
+                    'Content-Length': 933,
+                    'Content-Type': 'multipart/form-data; ' +
+                        'boundary={b}'.format(b=test_multipart.boundary)
                 }
             ],
             [
                 None,
                 {
-                    'Content-Length': 925,
-                    'Content-Type': 'multipart/form-data;' +
-                    'boundary={b}'.format(b=self.test_multipart.boundary)
+                    'Content-Length': 933,
+                    'Content-Type': 'multipart/form-data; ' +
+                        'boundary={b}'.format(b=test_multipart.boundary)
                 }
             ]
         ]
@@ -92,10 +92,12 @@ class TestMultipart(unittest.TestCase):
         for h in case:
             self.assertEqual(
                 h[1],
-                self.test_multipart.make_headers(key_value_pair, h[0])
+                test_multipart.make_headers(key_value_pair, h[0])
             )
 
     def test_body(self):
+        test_multipart = httpmultipart.MultipartObject()
+
         fsutil.write_file(
             '/root/tmp/a.txt',
             '''
@@ -122,8 +124,8 @@ class TestMultipart(unittest.TestCase):
                     }
                 },
                 [
-                    '--{b}'.format(b=self.test_multipart.boundary),
-                    'Content-Dispostion: form-data;name=metadata1',
+                    '--{b}'.format(b=test_multipart.boundary),
+                    'Content-Disposition: form-data; name=metadata1',
                     ''
                 ]
             ],
@@ -136,9 +138,9 @@ class TestMultipart(unittest.TestCase):
                     }
                 },
                 [
-                    '--{b}'.format(b=self.test_multipart.boundary),
-                    'Content-Dispostion: form-data;name=metadata2;'
-                    + 'filename=a.txt',
+                    '--{b}'.format(b=test_multipart.boundary),
+                    'Content-Disposition: form-data; name=metadata2; '
+                        + 'filename=a.txt',
                     'Content-Type: application/octet-stream',
                     ''
                 ]
@@ -151,9 +153,9 @@ class TestMultipart(unittest.TestCase):
                     }
                 },
                 [
-                    '--{b}'.format(b=self.test_multipart.boundary),
-                    'Content-Dispostion: form-data;name=metadata3;'
-                    + 'filename=b.txt',
+                    '--{b}'.format(b=test_multipart.boundary),
+                    'Content-Disposition: form-data; name=metadata3; '
+                        + 'filename=b.txt',
                     'Content-Type: text/plain',
                     ''
                 ]
@@ -164,14 +166,18 @@ class TestMultipart(unittest.TestCase):
             for name, field in c[0].items():
                 key_value_pair[name] = field
 
-        body = self.test_multipart.make_body_reader(key_value_pair)
+        body = test_multipart.make_body_reader(key_value_pair)
         data = []
         for x in body:
             data.append(x)
 
-        self.assertEqual(self._body(case), ''.join(data))
+        self.assertEqual(self._body(case, test_multipart.boundary), ''.join(data))
 
-    def _body(self, case):
+    def tearDown(self):
+        fsutil.remove('/root/tmp/a.txt')
+        fsutil.remove('/root/tmp/b.txt')
+
+    def _body(self, case, boundary):
         result = ''
 
         for c in case:
@@ -199,6 +205,6 @@ class TestMultipart(unittest.TestCase):
                 result += '\r\n'.join(data)
                 result += '\r\n'
 
-        result += '--{b}--'.format(b=self.test_multipart.boundary)
+        result += '--{b}--'.format(b=boundary)
 
         return result

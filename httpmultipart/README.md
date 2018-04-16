@@ -34,9 +34,25 @@ The library is considered production ready.
 ```python
 from pykit import httpmultipart
 
-headers = {}
+headers = {
+    'Content-Type: multipart/form-data; boundary=${bound}'
+}
 
-key_value_pair = {}
+key_value_pair = {
+    'metadata1':
+    {
+        'value': 'lvting'
+    },
+    'metadata2':
+    {
+        'value': ['/root/tmp/a.txt', 'a.txt'],
+        'headers': {'Content-Type': 'application/octet-stream'}
+    },
+    'metadata3':
+    {
+        'value': ['/root/tmp/b.txt']
+    },
+}
 
 print httpmultipart.make_headers(key_value_pair, header)
 ```
@@ -44,7 +60,21 @@ print httpmultipart.make_headers(key_value_pair, header)
 ```python
 from pykit import httpmultipart
 
-key_value_pair = {}
+key_value_pair = {
+    'metadata1':
+    {
+        'value': 'lvting'
+    },
+    'metadata2':
+    {
+        'value': ['/root/tmp/a.txt', 'a.txt'],
+        'headers': {'Content-Type': 'application/octet-stream'}
+    },
+    'metadata3':
+    {
+        'value': ['/root/tmp/b.txt']
+    },
+}
 
 body_reader = httpmultipart.make_body_reader(key_value_pair)
 data = []
@@ -110,7 +140,7 @@ print httpmultipart.make_headers(key_value_pair, header)
 **arguments**:
 
 -  `key_value_pair`:
-   a `dict`(field_name, filed) is used in body after multipart encoding
+   a `dict`(`field_name`, `filed`) is used in body after multipart encoding
 
    - `field_name`:
    It's a str that represents each field name
@@ -118,15 +148,16 @@ print httpmultipart.make_headers(key_value_pair, header)
    - `field`
    It's a dict, and the dict includes both the value and headers elements,
    value can be a str or a list, str refers to the field being uploaded as a
-   str, and the `list`(file_path, file_name) indicates that the field is
-   uploaded as a file
+   str, and the `list`(`file_path`, `file_name`) indicates that the field is
+   uploaded as a file; headers elements must contain Content-Disposition,and if the file
+   is uploaded, it must also have Content-Type
      - `file_path`:
      upload the path to the file
      - `file_name`:
      upload the name about the file, the argument can also be None
 
 -  `headers`:
-   a `dict`(header_name, headers_value) of http request headers
+   a `dict`(`header_name`, `header_value`) of http request headers
    It's a default argument and its default value is None
 
 **return**:
@@ -148,7 +179,7 @@ print ''.join(data)
 **arguments**:
 
 -  `key_value_pair`:
-   a `dict`(field_name, filed) is used in body after multipart encoding
+   a `dict`(`field_name`, `filed`) is used in body after multipart encoding
 
    - `field_name`:
    It's a str that represents each field name
@@ -156,8 +187,9 @@ print ''.join(data)
    - `field`
    It's a dict, and the dict includes both the value and headers elements,
    value can be a str or a list, str refers to the field being uploaded as a
-   str, and the `list`(file_path, file_name) indicates that the field is
-   uploaded as a file
+   str, and the `list`(`file_path`, `file_name`) indicates that the field is
+   uploaded as a file; headers elements must contain Content-Disposition,and if the file
+   is uploaded, it must also have Content-Type
      - `file_path`:
      upload the path to the file
      - `file_name`:

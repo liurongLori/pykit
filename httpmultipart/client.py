@@ -30,7 +30,7 @@ class MultipartObject(object):
         else:
             headers = copy.deepcopy(headers)
 
-        headers['Content-Type'] = 'multipart/form-data;' + \
+        headers['Content-Type'] = 'multipart/form-data; ' + \
             'boundary={b}'.format(b=self.boundary)
 
         if 'Content-Length' not in headers:
@@ -74,30 +74,29 @@ class MultipartObject(object):
         field_header = ['--{b}'.format(b=self.boundary)]
 
         if isinstance(value, str):
-            arr = 'Content-Dispostion: form-data;name={n}'.format(n=name)
-            field_header.append(arr)
-
+            required_header = 'Content-Disposition: form-data; name={n}'.format(n=name)
+            field_header.append(required_header)
         elif isinstance(value, list):
             file_path, file_name = (value + [None])[:2]
 
             if file_name is None:
                 file_name = os.path.basename(file_path)
 
-            arr = 'Content-Dispostion: form-data;name={n};filename={fn}'.format(
+            required_header = 'Content-Disposition: form-data; name={n}; filename={fn}'.format(
                 n=name, fn=file_name)
-            field_header.append(arr)
+            field_header.append(required_header)
 
             if 'Content-Type' not in headers:
                 file_type = mime.get_by_filename(file_name)
                 headers['Content-Type'] = str(file_type)
         else:
             raise InvalidArgumentError(
-                'value is invalid type{x}'.format(x=type(value)))
+                'value is invalid type {x}'.format(x=type(value)))
 
         for ki, vi in headers.items():
             field_header.append(ki+': '+vi)
 
-        field_header.extend(['']*2)
+        field_header.extend([''] * 2)
         return '\r\n'.join(field_header)
 
     def _get_field_size(self, name, field):

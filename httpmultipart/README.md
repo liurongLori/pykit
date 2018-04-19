@@ -16,6 +16,7 @@
 - [Methods](#methods)
   - [httpmultipart.make_headers](#httpmultipartmake_headers)
   - [httpmultipart.make_body_reader](#httpmultipartmake_body_reader)
+  - [httpmultipart.make_file_reader](#httpmultipartmake_file_reader)
 - [Author](#author)
 - [Copyright and License](#copyright-and-license)
 
@@ -34,55 +35,68 @@ The library is considered production ready.
 ```python
 from pykit import httpmultipart
 
+# http request headers
 headers = {
-    'Content-Type: multipart/form-data; boundary=${bound}'
+    'Content-Length': len(body),
+    ...
 }
 
-key_value_pair = {
-    'metadata1':
+# http request fields
+fields = [
     {
-        'value': 'lvting'
+        'name': 'field_name',
+        'value': content,
+        'headers': {}
     },
-    'metadata2':
-    {
-        'value': ['/root/tmp/a.txt', 'a.txt'],
-        'headers': {'Content-Type': 'application/octet-stream'}
-    },
-    'metadata3':
-    {
-        'value': ['/root/tmp/b.txt']
-    },
-}
+    ...
+]
 
-print httpmultipart.make_headers(key_value_pair, header)
+# get http request headers
+res_headers = httpmultipart.make_headers(fields, header)
+#res_headers = {
+#                  'Content-Type': 'multipart/form-data; boundary=${bound}',
+#                  'Conetnt-Length': 1024,
+#                  ...
+#              }
+
 ```
 
 ```python
 from pykit import httpmultipart
 
-key_value_pair = {
-    'metadata1':
-    {
-        'value': 'lvting'
-    },
-    'metadata2':
-    {
-        'value': ['/root/tmp/a.txt', 'a.txt'],
-        'headers': {'Content-Type': 'application/octet-stream'}
-    },
-    'metadata3':
-    {
-        'value': ['/root/tmp/b.txt']
-    },
-}
+# http request fields
+# refer to the explanation above fields
 
-body_reader = httpmultipart.make_body_reader(key_value_pair)
+# get http request body reader
+body_reader = httpmultipart.make_body_reader(fields)
 data = []
 
 for body in body_reader:
     data.append(body)
+body = ''.join(data)
+#body = '
+#           --${bound}
+#           Content-Disposition: form-data; name=field_name
+#
+#           content
+#           --${bound}
+#           Content-Disposition: form-data; name=field_name; filename=file_name
+#           Content-Type: application/octet-stream
+#
+#           file_content
+#           EOF
+#           --${bound}--
+#        '
+```
+```python
+from pykit import httpmultipart
 
-print ''.join(data)
+#the path of the file
+file_path = '/root/tmp/example.txt'
+
+#Convert file to generator
+file_reader = httpmultipart.make_file_reader(file_path)
+
 ```
 
 #   Description
@@ -130,43 +144,48 @@ Multipart body need boundary
 **syntax**:
 `httpmultipart.MultipartObject.make_headers`
 
-Return a header according to the key_value_pair and headers
+Return a header according to the fields and headers
 
 Examples:
 ```
-print httpmultipart.make_headers(key_value_pair, headers)
+print httpmultipart.make_headers(fields, headers)
 ```
 **arguments**:
 
--  `key_value_pair`:
-   a `dict`{`field_name`: `filed`} is used in body after multipart encoding
+-   `fields`:
+    a list, each element is a dict in the list, and dict contains three keys,
+    `name`, `value` and `headers`
 
-   - `field_name`:
-   It's a str that represents each field name
+    -   `name`:
+    It's a str that represents each field's name
 
-   - `field`:
-   The field is a `dict`{`value`: a str or a list, `headers':
-   {`field_header_name`:`field_header_value`}} :
+    -   `value`:
+    The value can be a str or a list, str says that the field is a normal str,
+    the list says that the field can be a large str as a generator or a file
+    as a generator, for example, the `list`[`str_reader`, `size`]、 the `list`
+    [`file_reader`, `size`, file_name]
 
-     -`value`:
-     The value can be a str or a list, str refers to the field being uploaded
-     as a str, and the `list`(`file_path`, `file_name`)indicates that the field
-     is uploaded as a file
+        -   `str_reader`:
+        It's a generator, representing upload the large str
 
-       -`file_path`:
-       upload the path to the file
+        -   `file_reader`:
+        It's a generator, representing upload the file
 
-       -`file_name`:
-       upload the name about the file, the argument can also be None
+        -   `size`:
+        the size of the uploaded large str or file
 
-     -`headers`:
-     The headers is a `dict`(`field_header_name`, `field_header_value`),it
-     contains user defined headers and the required headers, such as
-     'Content-Disposition' and 'Content-Type'
+        -   `file_name`:
+        upload the name about the file, if `list[0]` is a str_reader, file_name
+        is None
 
--  `headers`:
-   a `dict`{`header_name`: `header_value`} of http request headers
-   It's a default argument and its default value is None
+    -   `headers`:
+    a dict, key is the field_header_name, value is the field_header_value,
+    it contains user defined headers and the required headers, such as
+    'Content-Disposition' and 'Content-Type'
+
+-   `headers`:
+    a `dict`{`header_name`: `header_value`} of http request headers
+    It's a default argument and its default value is None
 
 **return**:
 dict about headers
@@ -176,11 +195,11 @@ dict about headers
 **syntax**
 `httpmultipart.MultipartObject.make_body_reader`
 
-Return a body after multipart encoding according to the key_value_pair
+Return a body after multipart encoding according to the fields
 
 Examples:
 ```
-body_reader = httpmultipart.make_body_reader(key_value_pair)
+body_reader = httpmultipart.make_body_reader(fields)
 data = []
 
 for body in body_reader:
@@ -189,34 +208,30 @@ print ''.join(data)
 ```
 **arguments**:
 
--  `key_value_pair`:
-   a `dict`{`field_name`: `field`} is used in body after multipart encoding
-
-   - `field_name`:
-   It's a str that represents each field name
-
-   - `field`:
-   The field is a `dict`{`value`: a str or a list, `headers':
-   {`field_header_name`:`field_header_value`}} :
-
-     -`value`:
-     The value can be a str or a list, str refers to the field being uploaded
-     as a str, and the `list`(`file_path`, `file_name`)indicates that the field
-     is uploaded as a file
-
-       -`file_path`:
-       upload the path to the file
-
-       -`file_name`:
-       upload the name about the file, the argument can also be None
-
-     -`headers`:
-     The headers is a `dict`(`field_header_name`, `field_header_value`),it
-     contains user defined headers and the required headers, such as
-     'Content-Disposition' and 'Content-Type'
+-  `fields`:
+    refer to the explanation above fields
 
 **return**:
 generator about body after multipart encoding
+
+##  httpmultipart.MultipartObject.make_file_reader
+
+**syntax**
+`httpmultipart.MultipartObject.make_file_reader`
+
+Return a generator about file
+
+Examples:
+```
+file_reader = httpmultipart.make_file_reader(file_path)
+```
+**arguments**
+
+-   `file_path`:
+    the path of the file
+
+**return**:
+generator about file
 
 #   Author
 

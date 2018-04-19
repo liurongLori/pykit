@@ -3,10 +3,12 @@
 
 import unittest
 import copy
+import random
+import string
+import os
 
 from pykit import httpmultipart
 from pykit import fsutil
-
 
 class TestMultipart(unittest.TestCase):
     def __init__(self, *args, **kwargs):
@@ -29,10 +31,10 @@ class TestMultipart(unittest.TestCase):
             ],
             [
                 {
-                    'Content-Length': 1000
+                    'Content-Length': 1200
                 },
                 {
-                    'Content-Length': 1000,
+                    'Content-Length': 1200,
                     'Content-Type': 'multipart/form-data; ' +
                         'boundary={b}'.format(b=test_multipart.boundary)
                 }
@@ -42,7 +44,7 @@ class TestMultipart(unittest.TestCase):
                     'Content-Type': 'application/octet-stream'
                 },
                 {
-                    'Content-Length': 933,
+                    'Content-Length': 1207,
                     'Content-Type': 'multipart/form-data; ' +
                         'boundary={b}'.format(b=test_multipart.boundary)
                 }
@@ -50,161 +52,204 @@ class TestMultipart(unittest.TestCase):
             [
                 None,
                 {
-                    'Content-Length': 933,
+                    'Content-Length': 1207,
                     'Content-Type': 'multipart/form-data; ' +
                         'boundary={b}'.format(b=test_multipart.boundary)
                 }
             ]
         ]
 
-        fsutil.write_file(
-            '/root/tmp/a.txt',
-            '''
+        str1 = '''
                 使命：Better Internet ，Better life
                 愿景：成为全球受人尊敬的科技公司；最具创新力；最佳雇主
                 未来白山的特质：渴求变革；让创新超越客户想象；全球化；真诚、并始终如一
                 信条：以用户为中心，其他一切水到渠成；专心将一件事做到极致；越快越好
-            '''
-        )
-        fsutil.write_file(
-            '/root/tmp/b.txt',
-            '''
+               '''
+        str2 = '''
                 12343564343rfe
                 fdf4erguu38788894hf
                 12rfhfvh8876w91908777yfj
-            '''
+               '''
+        str3 = '''
+                838839938238838388383838
+                dddjjdkkksijdidhdhhhhddd
+                djdjdfdf4erguu38788894hf
+                12rfhfvh8876w91908777yfj
+               '''
+
+        fsutil.write_file(
+            '/root/tmp/a.txt', str1
         )
-        key_value_pair = {
-            'metadata1':
+        fsutil.write_file(
+            '/root/tmp/b.txt', str2
+        )
+
+        def make_str_reader():
+            yield str3
+
+        def make_file_reader():
+            with open('/root/tmp/a.txt') as f:
+                while True:
+                    buf = f.read(1024 * 1024)
+                    if buf == '':
+                        break
+                    yield buf
+
+        str_reader = make_str_reader()
+        str_size = len(str3)
+
+        file_reader = make_file_reader()
+        file_size = os.path.getsize('/root/tmp/a.txt')
+
+        fields = [
             {
-                'value': 'lvting'
+                'name': 'metadata1',
+                'value': 'lvting',
             },
-            'metadata2':
             {
-                'value': ['/root/tmp/a.txt', 'a.txt'],
+                'name': 'metadata2',
+                'value': [str_reader, str_size],
+            },
+            {
+                'name': 'metadata3',
+                'value': [file_reader, file_size, 'a.txt'],
+            },
+            {
+                'name': 'metadata4',
+                'value':
+                [test_multipart.make_file_reader('/root/tmp/b.txt'),
+                          os.path.getsize('/root/tmp/b.txt'), 'b.txt'],
                 'headers': {'Content-Type': 'application/octet-stream'}
             },
-            'metadata3':
-            {
-                'value': ['/root/tmp/b.txt']
-            },
-        }
+        ]
         for h in case:
             self.assertEqual(
                 h[1],
-                test_multipart.make_headers(key_value_pair, h[0])
+                test_multipart.make_headers(fields, h[0])
             )
 
     def test_body(self):
         test_multipart = httpmultipart.MultipartObject()
 
-        fsutil.write_file(
-            '/root/tmp/a.txt',
-            '''
+        str1 = '''
                 使命：Better Internet ，Better life
                 愿景：成为全球受人尊敬的科技公司；最具创新力；最佳雇主
                 未来白山的特质：渴求变革；让创新超越客户想象；全球化；真诚、并始终如一
                 信条：以用户为中心，其他一切水到渠成；专心将一件事做到极致；越快越好
-            '''
-        )
-        fsutil.write_file(
-            '/root/tmp/b.txt',
-            '''
+               '''
+        str2 = '''
                 12343564343rfe
                 fdf4erguu38788894hf
                 12rfhfvh8876w91908777yfj
-            '''
+               '''
+        str3 = '''
+                838839938238838388383838
+                dddjjdkkksijdidhdhhhhddd
+                djdjdfdf4erguu38788894hf
+                12rfhfvh8876w91908777yfj
+               '''
+
+        fsutil.write_file(
+            '/root/tmp/a.txt', str1
         )
+        fsutil.write_file(
+            '/root/tmp/b.txt', str2
+        )
+
+        def make_str_reader():
+            yield str3
+
+        def make_file_reader():
+            with open('/root/tmp/a.txt') as f:
+                while True:
+                    buf = f.read(1024 * 1024)
+                    if buf == '':
+                        break
+                    yield buf
+
+        str_reader = make_str_reader()
+        str_size = len(str3)
+
+        file_reader = make_file_reader()
+        file_size = os.path.getsize('/root/tmp/b.txt')
+
         case = [
             [
-                {
-                    'metadata1':
+                [
                     {
+                        'name': 'metadata1',
                         'value': 'lvting'
                     }
-                },
+                ],
                 [
                     '--{b}'.format(b=test_multipart.boundary),
                     'Content-Disposition: form-data; name=metadata1',
-                    ''
+                    '',
+                    'lvting',
+                    '--{b}--'.format(b=test_multipart.boundary),
                 ]
             ],
             [
-                {
-                    'metadata2':
+                [
                     {
-                        'value': ['/root/tmp/a.txt', 'a.txt'],
-                        'headers': {'Content-Type': 'application/octet-stream'}
+                        'name': 'metadata2',
+                        'value': [str_reader, str_size],
                     }
-                },
+                ],
                 [
                     '--{b}'.format(b=test_multipart.boundary),
-                    'Content-Disposition: form-data; name=metadata2; '
-                        + 'filename=a.txt',
-                    'Content-Type: application/octet-stream',
-                    ''
+                    'Content-Disposition: form-data; name=metadata2',
+                    '',
+                    str3,
+                    '--{b}--'.format(b=test_multipart.boundary),
                 ]
             ],
             [
-                {
-                    'metadata3':
+                [
                     {
-                        'value': ['/root/tmp/b.txt']
+                        'name': 'metadata3',
+                        'value': [file_reader, file_size, 'a.txt'],
                     }
-                },
+                ],
                 [
                     '--{b}'.format(b=test_multipart.boundary),
                     'Content-Disposition: form-data; name=metadata3; '
-                        + 'filename=b.txt',
+                        + 'filename=a.txt',
                     'Content-Type: text/plain',
-                    ''
+                    '',
+                    str1,
+                    '--{b}--'.format(b=test_multipart.boundary),
                 ]
             ],
+            [
+                [
+                    {
+                        'name': 'metadata4',
+                        'value':
+                        [test_multipart.make_file_reader('/root/tmp/b.txt'),
+                            os.path.getsize('/root/tmp/b.txt'), 'b.txt'],
+                    }
+                ],
+                [
+                    '--{b}'.format(b=test_multipart.boundary),
+                    'Content-Disposition: form-data; name=metadata4; '
+                        + 'filename=b.txt',
+                    'Content-Type: text/plain',
+                    '',
+                    str2,
+                    '--{b}--'.format(b=test_multipart.boundary),
+                ]
+            ],
+
         ]
-        key_value_pair = {}
         for c in case:
-            for name, field in c[0].items():
-                key_value_pair[name] = field
+            body = test_multipart.make_body_reader(c[0])
+            data = []
+            for x in body:
+                data.append(x)
 
-        body = test_multipart.make_body_reader(key_value_pair)
-        data = []
-        for x in body:
-            data.append(x)
-
-        self.assertEqual(self._body(case, test_multipart.boundary), ''.join(data))
+            self.assertEqual('\r\n'.join(c[1]), ''.join(data))
 
     def tearDown(self):
         fsutil.remove('/root/tmp/a.txt')
         fsutil.remove('/root/tmp/b.txt')
-
-    def _body(self, case, boundary):
-        result = ''
-
-        for c in case:
-            field_header = c[1]
-            result += '\r\n'.join(field_header)
-            result += '\r\n'
-
-            for field in c[0].values():
-                value, headers = field['value'], field.get('headers', {})
-
-                data = []
-
-                if isinstance(value, str):
-                    data.append(value)
-                elif isinstance(value, list):
-                    file_path = (value)[0]
-
-                    with open(file_path) as f:
-                        while True:
-                            buf = f.read(1024*1024)
-                            if buf == '':
-                                break
-                            data.append(buf)
-
-                result += '\r\n'.join(data)
-                result += '\r\n'
-
-        result += '--{b}--'.format(b=boundary)
-
-        return result

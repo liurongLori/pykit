@@ -8,15 +8,15 @@
 - [Description](#description)
 - [Exception](#exception)
   - [httpmultipart.MultipartError](#httpmultipartmultiparterror)
-  - [httpmultipart.InvalidArgumentError](#httpmultipartinvalidArgumenterror)
+  - [httpmultipart.InvalidArgumentTypeError](#httpmultipartinvalidargumenttypeerror)
 - [Constants](#constants)
   - [httpmultipart.MultipartObject.boundary](#httpmultipartmultipartobjectboundary)
+  - [httpmultipart.MultipartObject.block_size](#httpmultipartmultipartobjectblock_size)
 - [Classes](#classes)
   - [httpmultipart.MultipartObject](httpmultipartmultipartobject)
 - [Methods](#methods)
-  - [httpmultipart.make_headers](#httpmultipartmake_headers)
-  - [httpmultipart.make_body_reader](#httpmultipartmake_body_reader)
-  - [httpmultipart.make_file_reader](#httpmultipartmake_file_reader)
+  - [httpmultipart.MultipartObject.make_headers](#httpmultipartmultipartobjectmake_headers)
+  - [httpmultipart.MultipartObject.make_body_reader](#httpmultipartmultipartobjectmake_body_reader)
 - [Author](#author)
 - [Copyright and License](#copyright-and-license)
 
@@ -59,14 +59,6 @@ res_headers = httpmultipart.make_headers(fields, header)
 #                  ...
 #              }
 
-```
-
-```python
-from pykit import httpmultipart
-
-# http request fields
-# refer to the explanation above fields
-
 # get http request body reader
 body_reader = httpmultipart.make_body_reader(fields)
 data = []
@@ -75,35 +67,26 @@ for body in body_reader:
     data.append(body)
 body = ''.join(data)
 #body = '
-#           --${bound}
+#           --FormBoundaryrGKCBY7qhFd3TrwA
 #           Content-Disposition: form-data; name=field_name
 #
 #           content
-#           --${bound}
+#           --FormBoundaryrGKCBY7qhFd3TrwA
 #           Content-Disposition: form-data; name=field_name; filename=file_name
 #           Content-Type: application/octet-stream
 #
 #           file_content
 #           EOF
-#           --${bound}--
+#           --FormBoundaryrGKCBY7qhFd3TrwA--
+#           ...
 #        '
-```
-```python
-from pykit import httpmultipart
-
-#the path of the file
-file_path = '/root/tmp/example.txt'
-
-#Convert file to generator
-file_reader = httpmultipart.make_file_reader(file_path)
-
 ```
 
 #   Description
 
-This module provide some util methods to get multipart headers and body.
+This module provides some util methods to get multipart headers and body.
 
-#   Exceptions
+#   Exception
 
 ##  httpmultipart.MultipartError
 
@@ -113,13 +96,13 @@ This module provide some util methods to get multipart headers and body.
 The base class of the other exceptions in this module.
 It is a subclass of `Exception`
 
-##  httpmultipart.InvalidArgumentError
+##  httpmultipart.InvalidArgumentTypeError
 
 **syntax**:
-`httpmultipart.InvalidArgumentError`
+`httpmultipart.InvalidArgumentTypeError`
 
 A subclass of `MultipartError`
-Raise if value is not a str or a list
+Raise if value's type is not a str or a list
 
 #   Constants
 
@@ -128,7 +111,14 @@ Raise if value is not a str or a list
 **syntax**:
 `httpmultipart.MultipartObject.boundary`
 
-Multipart body need boundary
+a placeholder that represents out specified delimiter
+
+##  httpmultipart.MultipartObject.block_size
+
+**syntax**:
+`httpmultipart.MultipartObject.block_size`
+
+It represents the size of each reading file
 
 #   Classes
 
@@ -146,92 +136,61 @@ Multipart body need boundary
 
 Return a header according to the fields and headers
 
-Examples:
-```
-print httpmultipart.make_headers(fields, headers)
-```
 **arguments**:
 
 -   `fields`:
-    a list, each element is a dict in the list, and dict contains three keys,
-    `name`, `value` and `headers`
+    is a list of the dict, and each elements contains `name`, `value` and `headers`,
+    and so on. `headers` is an optional argument
 
     -   `name`:
-    It's a str that represents each field's name
+    It's a string that represents field's name
 
     -   `value`:
-    The value can be a str or a list, str says that the field is a normal str,
-    the list says that the field can be a large str as a generator or a file
-    as a generator, for example, the `list`[`str_reader`, `size`]、 the `list`
-    [`file_reader`, `size`, file_name]
+    The value can be a string or a list, string indicates that the field is a normal
+    string, However, there are three situations about list:
 
-        -   `str_reader`:
-        It's a generator, representing upload the large str
+    First, the list indicates that field can be a common string generator, and the
+    arguments are `str_reader` and `size`. The `str_reader` is a generator,
+    representing upload the large string, `size` refers to the length of the
+    string
 
-        -   `file_reader`:
-        It's a generator, representing upload the file
+    Second, the list indicates that field can be a file, and the arguments are
+    `file_path` and `size`. The `file_path` is the path of the file and `size`
+    refers to the length of the file. When the list[0] is a `file_path`, the
+    program automatically converts the file by `file_path` into a common string
+    generator
 
-        -   `size`:
-        the size of the uploaded large str or file
-
-        -   `file_name`:
-        upload the name about the file, if `list[0]` is a str_reader, file_name
-        is None
+    Third, the list indicates that field can be a file generator, and the arguments
+    are `file_reader`, `size` and `file_name`. The `file_reader` is a generator,
+    representing upload the file, `size` refers to the length of the file, `file_name`
+    is the name of the uploaded file
 
     -   `headers`:
-    a dict, key is the field_header_name, value is the field_header_value,
+    a dict, key is the `field_header_name`, value is the `field_header_value`,
     it contains user defined headers and the required headers, such as
     'Content-Disposition' and 'Content-Type'
 
 -   `headers`:
-    a `dict`{`header_name`: `header_value`} of http request headers
-    It's a default argument and its default value is None
+    a dict of http request headers, key is the `header_name`, value is the
+    `header_value`.  It's a default argument and its default value is None
 
 **return**:
-dict about headers
+a dict that represents the request headers
 
 ##  httpmultipart.MultipartObject.make_body_reader
 
 **syntax**
 `httpmultipart.MultipartObject.make_body_reader`
 
-Return a body after multipart encoding according to the fields
+Return a body according to the fields
 
-Examples:
-```
-body_reader = httpmultipart.make_body_reader(fields)
-data = []
-
-for body in body_reader:
-    data.append(body)
-print ''.join(data)
-```
 **arguments**:
 
 -  `fields`:
     refer to the explanation above fields
 
 **return**:
-generator about body after multipart encoding
-
-##  httpmultipart.MultipartObject.make_file_reader
-
-**syntax**
-`httpmultipart.MultipartObject.make_file_reader`
-
-Return a generator about file
-
-Examples:
-```
-file_reader = httpmultipart.make_file_reader(file_path)
-```
-**arguments**
-
--   `file_path`:
-    the path of the file
-
-**return**:
-generator about file
+a generator that represents the multipart request body
 
 #   Author
 

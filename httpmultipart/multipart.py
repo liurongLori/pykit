@@ -14,14 +14,19 @@ class MultipartError(Exception):
     pass
 
 
-class InvalidArgumentError(MultipartError):
+class InvalidArgumentTypeError(MultipartError):
     pass
 
 
 class MultipartObject(object):
 
-    def __init__(self):
+    def __init__(self, block_size=1024 * 1024):
+        self.block_size = block_size
+
         self.boundary = uuid.uuid4().hex
+
+        self.delimiter = '--{b}'.format(b=self.boundary)
+        self.terminator = '--{b}--'.format(b=self.boundary)
 
     def make_headers(self, fields, headers=None):
 
@@ -45,78 +50,51 @@ class MultipartObject(object):
             name, value, headers = (
                 field['name'], field['value'], field.get('headers', {}))
 
-            _reader, size, headers = self._get_normal_field(
+            fbody_reader, fbody_size, headers = self._get_field(
                 name, value, headers)
-            field_header = self._get_field_header(headers)
 
-            yield field_header
+            yield self._get_field_header(headers)
 
-            for buf in _reader:
+            for buf in fbody_reader:
                 yield buf
 
             yield '\r\n'
 
-        yield '--{b}--'.format(b=self.boundary)
+        yield self.terminator
 
-    def make_file_reader(self, file_path):
-        with open(file_path) as f:
-            while True:
-                buf = f.read(1024 * 1024)
-                if buf == '':
-                    break
-                yield buf
-
-    def _get_normal_field(self, name, value, headers):
-        _reader, size, file_name = None, None, None
-        headers = copy.deepcopy(headers)
-        field_headers = []
+    def _get_field(self, name, value, headers):
+        fbody_reader, fbody_size, fname = None, None, None
 
         if isinstance(value, str):
-            _reader, size = self._make_str_reader(value), len(value)
-            cont_dis = 'Content-Disposition: form-data; ' + \
-                'name={n}'.format(n=name)
-            field_headers.append(cont_dis)
+            fbody_reader, fbody_size = self._make_str_reader(value), len(value)
+            headers = self._set_content_disposition(headers, name, None)
         elif isinstance(value, list):
-            _reader, size, file_name = (value + [None])[:3]
+            fbody_reader, fbody_size, fname = (value + [None])[:3]
+            headers = self._set_content_disposition(headers, name, fname)
 
-            if file_name is None:
-                cont_dis = 'Content-Disposition: form-data; ' + \
-                    'name={n}'.format(n=name)
-                field_headers.append(cont_dis)
-            else:
-                cont_dis = 'Content-Disposition: form-data; ' + \
-                    'name={n}; filename={fn}'.format(n=name, fn=file_name)
-                field_headers.append(cont_dis)
+            if isinstance(fbody_reader, str):
+                fbody_reader = self._make_file_reader(fbody_reader)
 
+            if fname is not None:
                 if 'Content-Type' not in headers:
-                    file_type = mime.get_by_filename(file_name)
-                    headers['Content-Type'] = str(file_type)
+                    headers['Content-Type'] = (
+                        str(mime.get_by_filename(fname)))
         else:
-            raise InvalidArgumentError(
-                'value is invalid type {x}'.format(x=type(value)))
+            raise InvalidArgumentTypeError(
+                'value\'s type {x} is valid'.format(x=type(value)))
 
-        for ki, vi in headers.items():
-            field_headers.append(ki+': '+vi)
-
-        field_headers.extend([''] * 2)
-
-        return _reader, size, field_headers
+        return fbody_reader, fbody_size, headers
 
     def _get_field_size(self, field):
         name, value, headers = (
             field['name'], field['value'], field.get('headers', {}))
 
-        _reader, size, headers = self._get_normal_field(
+        fbody_reader, fbody_size, headers = self._get_field(
             name, value, headers)
 
-        field_header = self._get_field_header(headers)
+        field_headers = self._get_field_header(headers)
 
-        field_size = len(field_header)
-        field_size += size
-
-        field_size += len('\r\n')
-
-        return field_size
+        return len(field_headers) + fbody_size + len('\r\n')
 
     def _get_body_size(self, fields):
         body_size = 0
@@ -124,18 +102,45 @@ class MultipartObject(object):
         for field in fields:
             body_size += self._get_field_size(field)
 
-        body_size += len('--{b}--'.format(b=self.boundary))
+        body_size += len(self.terminator)
 
         return body_size
 
     def _get_field_header(self, headers):
-        field_header = ['--{b}'.format(b=self.boundary)]
+        field_headers = [self.delimiter]
 
-        for h in headers:
-            field_header.append(h)
+        field_headers.append('Content-Disposition: ' +
+            self._get_content_disposition(headers))
 
-        return '\r\n'.join(field_header)
+        for k, v in headers.items():
+            field_headers.append(k+': '+v)
 
+        field_headers.extend([''] * 2)
 
-    def _make_str_reader(self, strs):
-        yield strs
+        return '\r\n'.join(field_headers)
+
+    def _make_file_reader(self, file_path):
+        with open(file_path) as f:
+            while True:
+                buf = f.read(self.block_size)
+                if buf == '':
+                    break
+                yield buf
+
+    def _make_str_reader(self, data):
+        yield data
+
+    def _set_content_disposition(self, headers, name, fname):
+        _headers = copy.deepcopy(headers)
+
+        if fname is None:
+            _headers['Content-Disposition'] = (
+                    'form-data; name={n}'.format(n=name))
+        else:
+            _headers['Content-Disposition'] = (
+                'form-data; name={n}; filename={fn}'.format(n=name, fn=fname))
+
+        return _headers
+
+    def _get_content_disposition(self, headers):
+        return headers.pop('Content-Disposition')

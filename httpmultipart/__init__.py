@@ -1,7 +1,11 @@
 from .multipart import (
-    MultipartObject
+    MultipartObject,
+    MultipartError,
+    InvalidArgumentTypeError,
 )
 
 __all__ = [
-    'MultipartObject'
+    'MultipartObject',
+    'MultipartError',
+    'InvalidArgumentTypeError',
 ]

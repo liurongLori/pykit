@@ -13,9 +13,13 @@ from pykit import fsutil
 class TestMultipart(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(TestMultipart, self).__init__(*args, **kwargs)
+        self.test_multipart = None
+
+    def setUp(self):
+        self.test_multipart = httpmultipart.MultipartObject()
 
     def test_headers(self):
-        test_multipart = httpmultipart.MultipartObject()
+        self.test_multipart = httpmultipart.MultipartObject()
 
         case = [
             [
@@ -26,7 +30,7 @@ class TestMultipart(unittest.TestCase):
                 {
                     'Content-Length': 998,
                     'Content-Type': 'multipart/form-data; ' +
-                        'boundary={b}'.format(b=test_multipart.boundary)
+                        'boundary={b}'.format(b=self.test_multipart.boundary)
                 }
             ],
             [
@@ -36,7 +40,8 @@ class TestMultipart(unittest.TestCase):
                 {
                     'Content-Length': 1200,
                     'Content-Type': 'multipart/form-data; ' +
-                        'boundary={b}'.format(b=test_multipart.boundary)
+                        'boundary={b}'.format(b=self.test_multipart.boundary)
+
                 }
             ],
             [
@@ -44,17 +49,17 @@ class TestMultipart(unittest.TestCase):
                     'Content-Type': 'application/octet-stream'
                 },
                 {
-                    'Content-Length': 1207,
+                    'Content-Length': 1228,
                     'Content-Type': 'multipart/form-data; ' +
-                        'boundary={b}'.format(b=test_multipart.boundary)
+                        'boundary={b}'.format(b=self.test_multipart.boundary)
                 }
             ],
             [
                 None,
                 {
-                    'Content-Length': 1207,
+                    'Content-Length': 1228,
                     'Content-Type': 'multipart/form-data; ' +
-                        'boundary={b}'.format(b=test_multipart.boundary)
+                        'boundary={b}'.format(b=self.test_multipart.boundary)
                 }
             ]
         ]
@@ -84,27 +89,28 @@ class TestMultipart(unittest.TestCase):
             '/root/tmp/b.txt', str2
         )
 
-        def make_str_reader():
-            yield str3
-
         def make_file_reader():
-            with open('/root/tmp/a.txt') as f:
+            with open('/root/tmp/b.txt') as f:
                 while True:
                     buf = f.read(1024 * 1024)
                     if buf == '':
                         break
                     yield buf
 
+        def make_str_reader():
+            yield str3
+
         str_reader = make_str_reader()
         str_size = len(str3)
 
         file_reader = make_file_reader()
-        file_size = os.path.getsize('/root/tmp/a.txt')
+        file_size = os.path.getsize('/root/tmp/b.txt')
 
         fields = [
             {
                 'name': 'metadata1',
                 'value': 'lvting',
+                'headers': {'Date': 'Dec, 20 Dec 2018 15:00:00 GMT'}
             },
             {
                 'name': 'metadata2',
@@ -112,24 +118,27 @@ class TestMultipart(unittest.TestCase):
             },
             {
                 'name': 'metadata3',
-                'value': [file_reader, file_size, 'a.txt'],
+                'value': [
+                             '/root/tmp/a.txt',
+                              os.path.getsize('/root/tmp/a.txt'),
+                         ],
+                'headers': {'Content-Type': 'application/octet-stream'}
             },
             {
                 'name': 'metadata4',
-                'value':
-                [test_multipart.make_file_reader('/root/tmp/b.txt'),
-                          os.path.getsize('/root/tmp/b.txt'), 'b.txt'],
-                'headers': {'Content-Type': 'application/octet-stream'}
+                'value': [file_reader, file_size, 'b.txt'],
             },
         ]
         for h in case:
             self.assertEqual(
                 h[1],
-                test_multipart.make_headers(fields, h[0])
+                self.test_multipart.make_headers(fields, h[0])
             )
+        fsutil.remove('/root/tmp/a.txt')
+        fsutil.remove('/root/tmp/b.txt')
 
     def test_body(self):
-        test_multipart = httpmultipart.MultipartObject()
+        self.test_multipart = httpmultipart.MultipartObject()
 
         str1 = '''
                 使命：Better Internet ，Better life
@@ -156,16 +165,16 @@ class TestMultipart(unittest.TestCase):
             '/root/tmp/b.txt', str2
         )
 
-        def make_str_reader():
-            yield str3
-
         def make_file_reader():
-            with open('/root/tmp/a.txt') as f:
+            with open('/root/tmp/b.txt') as f:
                 while True:
                     buf = f.read(1024 * 1024)
                     if buf == '':
                         break
                     yield buf
+
+        def make_str_reader():
+            yield str3
 
         str_reader = make_str_reader()
         str_size = len(str3)
@@ -178,15 +187,17 @@ class TestMultipart(unittest.TestCase):
                 [
                     {
                         'name': 'metadata1',
-                        'value': 'lvting'
+                        'value': 'lvting',
+                        'headers': {'Date': 'Dec, 20 Dec 2018 15:00:00 GMT'}
                     }
                 ],
                 [
-                    '--{b}'.format(b=test_multipart.boundary),
+                    '--{b}'.format(b=self.test_multipart.boundary),
                     'Content-Disposition: form-data; name=metadata1',
+                    'Date: Dec, 20 Dec 2018 15:00:00 GMT',
                     '',
                     'lvting',
-                    '--{b}--'.format(b=test_multipart.boundary),
+                    '--{b}--'.format(b=self.test_multipart.boundary),
                 ]
             ],
             [
@@ -197,59 +208,66 @@ class TestMultipart(unittest.TestCase):
                     }
                 ],
                 [
-                    '--{b}'.format(b=test_multipart.boundary),
+                    '--{b}'.format(b=self.test_multipart.boundary),
                     'Content-Disposition: form-data; name=metadata2',
                     '',
                     str3,
-                    '--{b}--'.format(b=test_multipart.boundary),
+                    '--{b}--'.format(b=self.test_multipart.boundary),
                 ]
             ],
             [
                 [
                     {
                         'name': 'metadata3',
-                        'value': [file_reader, file_size, 'a.txt'],
+                        'value': [
+                                     '/root/tmp/a.txt',
+                                     os.path.getsize('/root/tmp/a.txt'),
+                                 ],
                     }
                 ],
                 [
-                    '--{b}'.format(b=test_multipart.boundary),
-                    'Content-Disposition: form-data; name=metadata3; '
-                        + 'filename=a.txt',
-                    'Content-Type: text/plain',
+                    '--{b}'.format(b=self.test_multipart.boundary),
+                    'Content-Disposition: form-data; name=metadata3',
                     '',
                     str1,
-                    '--{b}--'.format(b=test_multipart.boundary),
+                    '--{b}--'.format(b=self.test_multipart.boundary),
                 ]
             ],
             [
                 [
                     {
                         'name': 'metadata4',
-                        'value':
-                        [test_multipart.make_file_reader('/root/tmp/b.txt'),
-                            os.path.getsize('/root/tmp/b.txt'), 'b.txt'],
+                        'value': [file_reader, file_size, 'b.txt'],
                     }
                 ],
                 [
-                    '--{b}'.format(b=test_multipart.boundary),
+                    '--{b}'.format(b=self.test_multipart.boundary),
                     'Content-Disposition: form-data; name=metadata4; '
                         + 'filename=b.txt',
                     'Content-Type: text/plain',
                     '',
                     str2,
-                    '--{b}--'.format(b=test_multipart.boundary),
+                    '--{b}--'.format(b=self.test_multipart.boundary),
                 ]
             ],
-
         ]
         for c in case:
-            body = test_multipart.make_body_reader(c[0])
+            body = self.test_multipart.make_body_reader(c[0])
             data = []
             for x in body:
                 data.append(x)
 
             self.assertEqual('\r\n'.join(c[1]), ''.join(data))
-
-    def tearDown(self):
         fsutil.remove('/root/tmp/a.txt')
         fsutil.remove('/root/tmp/b.txt')
+
+    def test_raise_invalid_argument_type_error(self):
+        cases = [
+            ('metadata1', ('lvting',), {}),
+            ('metadata2', ('/root/tmp/x.txt', 1024), {}),
+        ]
+
+        for case in cases:
+            self.assertRaises(
+                httpmultipart.InvalidArgumentTypeError,
+                self.test_multipart._get_field, *case)

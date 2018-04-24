@@ -39,8 +39,7 @@ class MultipartObject(object):
             'boundary={b}'.format(b=self.boundary)
 
         if 'Content-Length' not in headers:
-            body_size = self._get_body_size(fields)
-            headers['Content-Length'] = body_size
+            headers['Content-Length'] = self._get_body_size(fields)
 
         return headers
 
@@ -50,7 +49,7 @@ class MultipartObject(object):
             name, value, headers = (
                 field['name'], field['value'], field.get('headers', {}))
 
-            fbody_reader, fbody_size, headers = self._get_field(
+            fbody_reader, fbody_size, headers = self._standardize_field(
                 name, value, headers)
 
             yield self._get_field_header(headers)
@@ -62,7 +61,7 @@ class MultipartObject(object):
 
         yield self.terminator
 
-    def _get_field(self, name, value, headers):
+    def _standardize_field(self, name, value, headers):
         fbody_reader, fbody_size, fname = None, None, None
 
         if isinstance(value, str):
@@ -73,24 +72,21 @@ class MultipartObject(object):
             headers = self._set_content_disposition(headers, name, fname)
 
             if isinstance(fbody_reader, str):
+                fbody_size = os.path.getsize(fbody_reader)
                 fbody_reader = self._make_file_reader(fbody_reader)
 
-            if fname is not None:
-                if 'Content-Type' not in headers:
-                    headers['Content-Type'] = (
+            if fname is not None and 'Content-Type' not in headers:
+                headers['Content-Type'] = (
                         str(mime.get_by_filename(fname)))
         else:
             raise InvalidArgumentTypeError(
-                'value\'s type {x} is valid'.format(x=type(value)))
+                'type of value {x} is valid'.format(x=type(value)))
 
         return fbody_reader, fbody_size, headers
 
     def _get_field_size(self, field):
-        name, value, headers = (
+        fbody_reader, fbody_size, headers = self._standardize_field(
             field['name'], field['value'], field.get('headers', {}))
-
-        fbody_reader, fbody_size, headers = self._get_field(
-            name, value, headers)
 
         field_headers = self._get_field_header(headers)
 
@@ -102,15 +98,13 @@ class MultipartObject(object):
         for field in fields:
             body_size += self._get_field_size(field)
 
-        body_size += len(self.terminator)
-
-        return body_size
+        return body_size + len(self.terminator)
 
     def _get_field_header(self, headers):
         field_headers = [self.delimiter]
 
         field_headers.append('Content-Disposition: ' +
-            self._get_content_disposition(headers))
+            self._pop_content_disposition(headers))
 
         for k, v in headers.items():
             field_headers.append(k+': '+v)
@@ -120,6 +114,7 @@ class MultipartObject(object):
         return '\r\n'.join(field_headers)
 
     def _make_file_reader(self, file_path):
+
         with open(file_path) as f:
             while True:
                 buf = f.read(self.block_size)
@@ -131,16 +126,15 @@ class MultipartObject(object):
         yield data
 
     def _set_content_disposition(self, headers, name, fname):
-        _headers = copy.deepcopy(headers)
 
         if fname is None:
-            _headers['Content-Disposition'] = (
+            headers['Content-Disposition'] = (
                     'form-data; name={n}'.format(n=name))
         else:
-            _headers['Content-Disposition'] = (
+            headers['Content-Disposition'] = (
                 'form-data; name={n}; filename={fn}'.format(n=name, fn=fname))
 
-        return _headers
+        return headers
 
-    def _get_content_disposition(self, headers):
+    def _pop_content_disposition(self, headers):
         return headers.pop('Content-Disposition')

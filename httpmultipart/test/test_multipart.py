@@ -221,7 +221,7 @@ class TestMultipart(unittest.TestCase):
                         'name': 'metadata3',
                         'value': [
                                      '/root/tmp/a.txt',
-                                     os.path.getsize('/root/tmp/a.txt'),
+                                     os.path.getsize('/root/tmp/a.txt')
                                  ],
                     }
                 ],
@@ -270,4 +270,4 @@ class TestMultipart(unittest.TestCase):
         for case in cases:
             self.assertRaises(
                 httpmultipart.InvalidArgumentTypeError,
-                self.test_multipart._get_field, *case)
+                self.test_multipart._standardize_field, *case)

@@ -68,12 +68,15 @@ class MultipartObject(object):
             fbody_reader, fbody_size = self._make_str_reader(value), len(value)
             headers = self._set_content_disposition(headers, name, None)
         elif isinstance(value, list):
-            fbody_reader, fbody_size, fname = (value + [None])[:3]
+            fbody_reader, fbody_size, fname = (value + [None] + [None])[:3]
             headers = self._set_content_disposition(headers, name, fname)
 
-            if isinstance(fbody_reader, str):
-                fbody_size = os.path.getsize(fbody_reader)
+            if isinstance(fbody_reader, file):
                 fbody_reader = self._make_file_reader(fbody_reader)
+
+            if isinstance(fbody_reader, str):
+                fbody_size = len(fbody_reader)
+                fbody_reader = self._make_str_reader(fbody_reader)
 
             if fname is not None and 'Content-Type' not in headers:
                 headers['Content-Type'] = (
@@ -113,14 +116,13 @@ class MultipartObject(object):
 
         return '\r\n'.join(field_headers)
 
-    def _make_file_reader(self, file_path):
+    def _make_file_reader(self, file_object):
 
-        with open(file_path) as f:
-            while True:
-                buf = f.read(self.block_size)
-                if buf == '':
-                    break
-                yield buf
+        while True:
+            buf = file_object.read(self.block_size)
+            if buf == '':
+                break
+            yield buf
 
     def _make_str_reader(self, data):
         yield data

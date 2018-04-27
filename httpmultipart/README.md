@@ -52,7 +52,7 @@ fields = [
 ]
 
 # get http request headers
-res_headers = httpmultipart.make_headers(fields, header)
+res_headers = httpmultipart.make_headers(fields, headers)
 #res_headers = {
 #                  'Content-Type': 'multipart/form-data; boundary=${bound}',
 #                  'Conetnt-Length': 1024,
@@ -149,21 +149,26 @@ Return a header according to the fields and headers
     The value can be a string or a list, string indicates that the field is a normal
     string, However, there are three situations about list:
 
-    First, the list indicates that field can be a common string generator, and the
-    arguments are `str_reader` and `size`. The `str_reader` is a generator,
+    First, the list indicates that field can be a string generator, and the arguments
+    are `str_reader`,`size` and `file_name`. The `str_reader` is a generator,
     representing upload the large string, `size` refers to the length of the
-    string
+    string, `file_name` is an optional argument.
 
-    Second, the list indicates that field can be a file, and the arguments are
-    `file_path` and `size`. The `file_path` is the path of the file and `size`
-    refers to the length of the file. When the list[0] is a `file_path`, the
-    program automatically converts the file by `file_path` into a common string
-    generator
+    Second, the list indicates that field can be a string, and the arguments are
+    `string`, `size`, `file_name`. The string refers the user want to upload a
+    string. When the list[0] is a `string`, the program automatically converts
+    the string into a generator, `size` and `file_name` is an optional argument
 
-    Third, the list indicates that field can be a file generator, and the arguments
+    Third, the list indicates that field can be a file, and the arguments are
+    `file_object`, `size` and `file_name`. The `file_object` is a file object,
+    `size` refers to the length of the file. When the list[0] is a `file_object`,
+    the program automatically converts the file into a generator, `file_name` is
+    an optional argument
+
+    Fourth, the list indicates that field can be a file generator, and the arguments
     are `file_reader`, `size` and `file_name`. The `file_reader` is a generator,
     representing upload the file, `size` refers to the length of the file, `file_name`
-    is the name of the uploaded file
+    is an optional argument
 
     -   `headers`:
     a dict, key is the `field_header_name`, value is the `field_header_value`,

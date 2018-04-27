@@ -102,7 +102,8 @@ It is a subclass of `Exception`
 `httpmultipart.InvalidArgumentTypeError`
 
 A subclass of `MultipartError`
-Raise if value's type is not a str or a list
+Raise if the type of value is not a str or a list or the type of value[0]
+is not a string, string reader, file reader or file object
 
 #   Constants
 
@@ -140,35 +141,35 @@ Return a header according to the fields and headers
 
 -   `fields`:
     is a list of the dict, and each elements contains `name`, `value` and `headers`,
-    and so on. `headers` is an optional argument
+    `headers` is an optional argument
 
     -   `name`:
     It's a string that represents field's name
 
     -   `value`:
-    The value can be a string or a list, string indicates that the field is a normal
-    string, However, there are three situations about list:
+    The value represents field's content. The type of value can be a string or a
+    list, string indicates that the field is a normal string, However, there are
+    three arguments of list: `content`, `size` and `file_name`
 
-    First, the list indicates that field can be a string generator, and the arguments
-    are `str_reader`,`size` and `file_name`. The `str_reader` is a generator,
-    representing upload the large string, `size` refers to the length of the
-    string, `file_name` is an optional argument.
+        -   `content`:
+        The type of `content` can be string, reader, file object
 
-    Second, the list indicates that field can be a string, and the arguments are
-    `string`, `size`, `file_name`. The string refers the user want to upload a
-    string. When the list[0] is a `string`, the program automatically converts
-    the string into a generator, `size` and `file_name` is an optional argument
+        The string type refers to the user want to upload a string. It takes the
+        string as the field body
 
-    Third, the list indicates that field can be a file, and the arguments are
-    `file_object`, `size` and `file_name`. The `file_object` is a file object,
-    `size` refers to the length of the file. When the list[0] is a `file_object`,
-    the program automatically converts the file into a generator, `file_name` is
-    an optional argument
+        The reader type refers to a generator. To read the contents of generator as
+        the field body
 
-    Fourth, the list indicates that field can be a file generator, and the arguments
-    are `file_reader`, `size` and `file_name`. The `file_reader` is a generator,
-    representing upload the file, `size` refers to the length of the file, `file_name`
-    is an optional argument
+        The file object type refers to a file object, represents upload the file.
+        To read the contents of file as the field body
+
+        -   `size`
+        `size` refers to the length of the content, When the type of `content` is a
+        string, size can be None
+
+        - `file_name`
+        `file_name` is an optional argument, if `file_name` is None, that indicates
+        that `content` is uploaded as a normal field, whereas, the field as a file
 
     -   `headers`:
     a dict, key is the `field_header_name`, value is the `field_header_value`,

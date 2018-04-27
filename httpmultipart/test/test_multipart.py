@@ -282,6 +282,7 @@ class TestMultipart(unittest.TestCase):
         cases = [
             ('metadata1', ('lvting',), {}),
             ('metadata2', ('/root/tmp/x.txt', 1024), {}),
+            ('metadata3', [123423, 1024], {}),
         ]
 
         for case in cases:

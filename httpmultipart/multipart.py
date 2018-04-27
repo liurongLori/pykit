@@ -73,17 +73,21 @@ class MultipartObject(object):
 
             if isinstance(fbody_reader, file):
                 fbody_reader = self._make_file_reader(fbody_reader)
-
-            if isinstance(fbody_reader, str):
+            elif isinstance(fbody_reader, str):
                 fbody_size = len(fbody_reader)
                 fbody_reader = self._make_str_reader(fbody_reader)
+            elif isinstance(fbody_reader, Iterator):
+                pass
+            else:
+                raise InvalidArgumentTypeError('type of value[0] {x}' +
+                    'is invalid'.format(x=type(fbody_reader)))
 
             if fname is not None and 'Content-Type' not in headers:
                 headers['Content-Type'] = (
                         str(mime.get_by_filename(fname)))
         else:
             raise InvalidArgumentTypeError(
-                'type of value {x} is valid'.format(x=type(value)))
+                'type of value {x} is invalid'.format(x=type(value)))
 
         return fbody_reader, fbody_size, headers
 

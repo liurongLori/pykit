@@ -16,7 +16,7 @@ class TestMultipart(unittest.TestCase):
         self.test_multipart = None
 
     def setUp(self):
-        self.test_multipart = httpmultipart.MultipartObject()
+        self.test_multipart = httpmultipart.Multipart()
 
     def test_headers(self):
 
@@ -82,14 +82,14 @@ class TestMultipart(unittest.TestCase):
                '''
 
         fsutil.write_file(
-            '/root/tmp/a.txt', str1
+            '/tmp/a.txt', str1
         )
         fsutil.write_file(
-            '/root/tmp/b.txt', str2
+            '/tmp/b.txt', str2
         )
 
         def make_file_reader():
-            with open('/root/tmp/b.txt') as f:
+            with open('/tmp/b.txt') as f:
                 while True:
                     buf = f.read(1024 * 1024)
                     if buf == '':
@@ -103,7 +103,7 @@ class TestMultipart(unittest.TestCase):
         str_size = len(str3)
 
         file_reader = make_file_reader()
-        file_size = os.path.getsize('/root/tmp/b.txt')
+        file_size = os.path.getsize('/tmp/b.txt')
 
         fields = [
             {
@@ -114,8 +114,8 @@ class TestMultipart(unittest.TestCase):
             {
                 'name': 'metadata2',
                 'value': [
-                              open('/root/tmp/a.txt'),
-                              os.path.getsize('/root/tmp/a.txt'),
+                              open('/tmp/a.txt'),
+                              os.path.getsize('/tmp/a.txt'),
                          ],
                 'headers': {'Content-Type': 'application/octet-stream'}
             },
@@ -137,8 +137,8 @@ class TestMultipart(unittest.TestCase):
                 h[1],
                 self.test_multipart.make_headers(fields, h[0])
             )
-        fsutil.remove('/root/tmp/a.txt')
-        fsutil.remove('/root/tmp/b.txt')
+        fsutil.remove('/tmp/a.txt')
+        fsutil.remove('/tmp/b.txt')
 
     def test_body(self):
 
@@ -161,14 +161,14 @@ class TestMultipart(unittest.TestCase):
                '''
 
         fsutil.write_file(
-            '/root/tmp/a.txt', str1
+            '/tmp/a.txt', str1
         )
         fsutil.write_file(
-            '/root/tmp/b.txt', str2
+            '/tmp/b.txt', str2
         )
 
         def make_file_reader():
-            with open('/root/tmp/b.txt') as f:
+            with open('/tmp/b.txt') as f:
                 while True:
                     buf = f.read(1024 * 1024)
                     if buf == '':
@@ -182,7 +182,7 @@ class TestMultipart(unittest.TestCase):
         str_size = len(str3)
 
         file_reader = make_file_reader()
-        file_size = os.path.getsize('/root/tmp/b.txt')
+        file_size = os.path.getsize('/tmp/b.txt')
 
         case = [
             [
@@ -207,8 +207,8 @@ class TestMultipart(unittest.TestCase):
                     {
                         'name': 'metadata2',
                         'value': [
-                                     open('/root/tmp/a.txt'),
-                                     os.path.getsize('/root/tmp/a.txt')
+                                     open('/tmp/a.txt'),
+                                     os.path.getsize('/tmp/a.txt')
                                  ],
                     }
                 ],
@@ -275,13 +275,13 @@ class TestMultipart(unittest.TestCase):
                 data.append(x)
 
             self.assertEqual('\r\n'.join(c[1]), ''.join(data))
-        fsutil.remove('/root/tmp/a.txt')
-        fsutil.remove('/root/tmp/b.txt')
+        fsutil.remove('/tmp/a.txt')
+        fsutil.remove('/tmp/b.txt')
 
     def test_raise_invalid_argument_type_error(self):
         cases = [
             ('metadata1', ('lvting',), {}),
-            ('metadata2', ('/root/tmp/x.txt', 1024), {}),
+            ('metadata2', ('/tmp/x.txt', 1024), {}),
             ('metadata3', [123423, 1024], {}),
         ]
 

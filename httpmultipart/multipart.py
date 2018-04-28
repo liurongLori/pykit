@@ -18,7 +18,7 @@ class InvalidArgumentTypeError(MultipartError):
     pass
 
 
-class MultipartObject(object):
+class Multipart(object):
 
     def __init__(self, block_size=1024 * 1024):
         self.block_size = block_size
@@ -49,12 +49,12 @@ class MultipartObject(object):
             name, value, headers = (
                 field['name'], field['value'], field.get('headers', {}))
 
-            fbody_reader, fbody_size, headers = self._standardize_field(
+            freader, fsize, headers = self._standardize_field(
                 name, value, headers)
 
             yield self._get_field_header(headers)
 
-            for buf in fbody_reader:
+            for buf in freader:
                 yield buf
 
             yield '\r\n'
@@ -62,42 +62,53 @@ class MultipartObject(object):
         yield self.terminator
 
     def _standardize_field(self, name, value, headers):
-        fbody_reader, fbody_size, fname = None, None, None
 
         if isinstance(value, str):
-            fbody_reader, fbody_size = self._make_str_reader(value), len(value)
-            headers = self._set_content_disposition(headers, name, None)
+            freader = self._make_str_reader(value)
+            fsize = len(value)
+            self._set_content_disposition(headers, name)
+
+            return freader, fsize, headers
+
         elif isinstance(value, list):
-            fbody_reader, fbody_size, fname = (value + [None] + [None])[:3]
-            headers = self._set_content_disposition(headers, name, fname)
 
-            if isinstance(fbody_reader, file):
-                fbody_reader = self._make_file_reader(fbody_reader)
-            elif isinstance(fbody_reader, str):
-                fbody_size = len(fbody_reader)
-                fbody_reader = self._make_str_reader(fbody_reader)
-            elif isinstance(fbody_reader, Iterator):
-                pass
-            else:
-                raise InvalidArgumentTypeError('type of value[0] {x}' +
-                    'is invalid'.format(x=type(fbody_reader)))
+            freader, fsize, fname = self._standardize_value(value)
 
-            if fname is not None and 'Content-Type' not in headers:
-                headers['Content-Type'] = (
-                        str(mime.get_by_filename(fname)))
+            self._set_content_disposition(headers, name, fname)
+            if fname is not None:
+                headers.setdefault('Content-Type', mime.get_by_filename(fname))
+
+            return freader, fsize, headers
+
+        raise InvalidArgumentTypeError(
+            'type of value {x} is invalid'.format(x=type(value)))
+
+    def _standardize_value(self, value):
+        freader, fsize, fname = (value + [None, None])[:3]
+
+        if isinstance(value[0], file):
+            freader = self._make_file_reader(value[0])
+
+        elif isinstance(value[0], str):
+            freader = self._make_str_reader(value[0])
+            fsize = len(value[0])
+
+        elif isinstance(value[0], Iterator):
+            pass
+
         else:
-            raise InvalidArgumentTypeError(
-                'type of value {x} is invalid'.format(x=type(value)))
+            raise InvalidArgumentTypeError('type of value[0] {x}' +
+                'is invalid'.format(x=type(value[0])))
 
-        return fbody_reader, fbody_size, headers
+        return freader, fsize, fname
 
     def _get_field_size(self, field):
-        fbody_reader, fbody_size, headers = self._standardize_field(
+        freader, fsize, headers = self._standardize_field(
             field['name'], field['value'], field.get('headers', {}))
 
         field_headers = self._get_field_header(headers)
 
-        return len(field_headers) + fbody_size + len('\r\n')
+        return len(field_headers) + fsize + len('\r\n')
 
     def _get_body_size(self, fields):
         body_size = 0
@@ -131,7 +142,7 @@ class MultipartObject(object):
     def _make_str_reader(self, data):
         yield data
 
-    def _set_content_disposition(self, headers, name, fname):
+    def _set_content_disposition(self, headers, name, fname=None):
 
         if fname is None:
             headers['Content-Disposition'] = (
@@ -139,8 +150,6 @@ class MultipartObject(object):
         else:
             headers['Content-Disposition'] = (
                 'form-data; name={n}; filename={fn}'.format(n=name, fn=fname))
-
-        return headers
 
     def _pop_content_disposition(self, headers):
         return headers.pop('Content-Disposition')

@@ -10,13 +10,13 @@
   - [httpmultipart.MultipartError](#httpmultipartmultiparterror)
   - [httpmultipart.InvalidArgumentTypeError](#httpmultipartinvalidargumenttypeerror)
 - [Constants](#constants)
-  - [httpmultipart.MultipartObject.boundary](#httpmultipartmultipartobjectboundary)
-  - [httpmultipart.MultipartObject.block_size](#httpmultipartmultipartobjectblock_size)
+  - [httpmultipart.Multipart.boundary](#httpmultipartmultipartboundary)
+  - [httpmultipart.Multipart.block_size](#httpmultipartmultipartblock_size)
 - [Classes](#classes)
-  - [httpmultipart.MultipartObject](httpmultipartmultipartobject)
+  - [httpmultipart.Multipart](httpmultipartmultipart)
 - [Methods](#methods)
-  - [httpmultipart.MultipartObject.make_headers](#httpmultipartmultipartobjectmake_headers)
-  - [httpmultipart.MultipartObject.make_body_reader](#httpmultipartmultipartobjectmake_body_reader)
+  - [httpmultipart.Multipart.make_headers](#httpmultipartmultipartmake_headers)
+  - [httpmultipart.Multipart.make_body_reader](#httpmultipartmultipartmake_body_reader)
 - [Author](#author)
 - [Copyright and License](#copyright-and-license)
 
@@ -37,26 +37,28 @@ from pykit import httpmultipart
 
 # http request headers
 headers = {
-    'Content-Length': len(body),
-    ...
+    'Content-Length': 1200,
 }
 
 # http request fields
+file_path = '/tmp/abc.txt'
+fsutil.write_file(file_path, '123456789')
 fields = [
     {
-        'name': 'field_name',
-        'value': content,
-        'headers': {}
+        'name': 'aaa',
+        'value': 'abcde',
     },
-    ...
+    {
+        'name': 'bbb',
+        'value': [file_path, os.path.getsize(file_path), 'abc.txt']
+    },
 ]
 
 # get http request headers
 res_headers = httpmultipart.make_headers(fields, headers)
 #res_headers = {
-#                  'Content-Type': 'multipart/form-data; boundary=${bound}',
-#                  'Conetnt-Length': 1024,
-#                  ...
+#                  'Content-Type': 'multipart/form-data; boundary=FormBoundaryrGKCBY7',
+#                  'Conetnt-Length': 1200,
 #              }
 
 # get http request body reader
@@ -67,18 +69,16 @@ for body in body_reader:
     data.append(body)
 body = ''.join(data)
 #body = '
-#           --FormBoundaryrGKCBY7qhFd3TrwA
-#           Content-Disposition: form-data; name=field_name
+#           --FormBoundaryrGKCBY7
+#           Content-Disposition: form-data; name=aaa
 #
-#           content
-#           --FormBoundaryrGKCBY7qhFd3TrwA
-#           Content-Disposition: form-data; name=field_name; filename=file_name
-#           Content-Type: application/octet-stream
+#           abcde
+#           --FormBoundaryrGKCBY7
+#           Content-Disposition: form-data; name=bbb; filename=abc.txt
+#           Content-Type: text/plain
 #
-#           file_content
-#           EOF
-#           --FormBoundaryrGKCBY7qhFd3TrwA--
-#           ...
+#           123456789
+#           --FormBoundaryrGKCBY7--
 #        '
 ```
 
@@ -107,33 +107,33 @@ is not a string, string reader, file reader or file object
 
 #   Constants
 
-##  httpmultipart.MultipartObject.boundary
+##  httpmultipart.Multipart.boundary
 
 **syntax**:
-`httpmultipart.MultipartObject.boundary`
+`httpmultipart.Multipart.boundary`
 
 a placeholder that represents out specified delimiter
 
-##  httpmultipart.MultipartObject.block_size
+##  httpmultipart.Multipart.block_size
 
 **syntax**:
-`httpmultipart.MultipartObject.block_size`
+`httpmultipart.Multipart.block_size`
 
 It represents the size of each reading file
 
 #   Classes
 
-##  httpmultipart.MultipartObject
+##  httpmultipart.Multipart
 
 **syntax**:
-`http.MultipartObject()`
+`http.Multipart()`
 
 #   Methods
 
-##  httpmultipart.MultipartObject.make_headers
+##  httpmultipart.Multipart.make_headers
 
 **syntax**:
-`httpmultipart.MultipartObject.make_headers`
+`httpmultipart.Multipart.make_headers`
 
 Return a header according to the fields and headers
 
@@ -160,8 +160,8 @@ Return a header according to the fields and headers
         The reader type refers to a generator. To read the contents of generator as
         the field body
 
-        The file object type refers to a file object, represents upload the file.
-        To read the contents of file as the field body
+        The file object type refers to a file object, To read the contents of file
+        as the field body
 
         -   `size`
         `size` refers to the length of the content, When the type of `content` is a
@@ -183,10 +183,10 @@ Return a header according to the fields and headers
 **return**:
 a dict that represents the request headers
 
-##  httpmultipart.MultipartObject.make_body_reader
+##  httpmultipart.Multipart.make_body_reader
 
 **syntax**
-`httpmultipart.MultipartObject.make_body_reader`
+`httpmultipart.Multipart.make_body_reader`
 
 Return a body according to the fields
 

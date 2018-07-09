@@ -29,7 +29,6 @@ class Multipart(object):
         self.terminator = '--{b}--'.format(b=self.boundary)
 
     def make_headers(self, fields, headers=None):
-
         if headers is None:
             headers = {}
         else:
@@ -44,7 +43,6 @@ class Multipart(object):
         return headers
 
     def make_body_reader(self, fields):
-
         for field in fields:
             name, value, headers = (
                 field['name'], field['value'], field.get('headers', {}))
@@ -62,7 +60,6 @@ class Multipart(object):
         yield self.terminator
 
     def _standardize_field(self, name, value, headers):
-
         if isinstance(value, str):
             freader = self._make_str_reader(value)
             fsize = len(value)
@@ -71,7 +68,6 @@ class Multipart(object):
             return freader, fsize, headers
 
         elif isinstance(value, list):
-
             freader, fsize, fname = self._standardize_value(value)
 
             self._set_content_disposition(headers, name, fname)
@@ -86,14 +82,14 @@ class Multipart(object):
     def _standardize_value(self, value):
         freader, fsize, fname = (value + [None, None])[:3]
 
-        if isinstance(value[0], file):
-            freader = self._make_file_reader(value[0])
+        if isinstance(freader, file):
+            freader = self._make_file_reader(freader)
 
-        elif isinstance(value[0], str):
-            freader = self._make_str_reader(value[0])
+        elif isinstance(freader, str):
+            freader = self._make_str_reader(freader)
             fsize = len(value[0])
 
-        elif isinstance(value[0], Iterator):
+        elif isinstance(freader, Iterator):
             pass
 
         else:
@@ -132,7 +128,6 @@ class Multipart(object):
         return '\r\n'.join(field_headers)
 
     def _make_file_reader(self, file_object):
-
         while True:
             buf = file_object.read(self.block_size)
             if buf == '':
@@ -143,7 +138,6 @@ class Multipart(object):
         yield data
 
     def _set_content_disposition(self, headers, name, fname=None):
-
         if fname is None:
             headers['Content-Disposition'] = (
                     'form-data; name={n}'.format(n=name))

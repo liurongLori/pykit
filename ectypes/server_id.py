@@ -12,12 +12,11 @@ from pykit import fsutil
 from pykit import net
 from pykit import strutil
 
-from .idbase import IDBase
-
 
 class ServerID(str):
 
     def __new__(clz, s):
+
         s = str(s)
         if re.match("^[0-9a-f]{12}$", s) is None:
             raise ValueError('ServerID must be 12 char hex, but: {s}'.format(s=s))
@@ -40,25 +39,6 @@ class MountPointIndex(str):
             raise ValueError('invalid mount point index: {s}'.format(s=s))
 
         return super(MountPointIndex, clz).__new__(clz, s)
-
-
-def _padding_0(s):
-    if str(s) != '0':
-        raise ValueError('padding must be "0", but: {s}'.format(s=s))
-    return str(s)
-
-
-class DriveID(IDBase):
-
-    _attrs = (
-        ('server_id', 0, 12, ServerID),
-        ('_padding_0', 12, 13, _padding_0),
-        ('mountpoint_index', 13, 16, MountPointIndex),
-    )
-
-    _str_len = 16
-
-    _tostr_fmt = '{server_id}0{mountpoint_index:0>3}'
 
 
 def _make_mountpoints_info():
@@ -133,7 +113,7 @@ def get_serverrec_str(serverrec):
     rst.append('mountpoints_count: {cnt}'.format(
                cnt=len(serverrec['mountpoints'])))
 
-    rst.append('allocated_drive_count: {cnt}'.format(
+    rst.append('allocated_drive_count:{cnt}'.format(
         cnt=len(serverrec['allocated_drive'])))
 
     return '; '.join(rst)

@@ -28,12 +28,14 @@ from .replication_config import (
     RSConfig,
 )
 
-from .server_id import (
+from .server import (
     get_serverrec_str,
     idc_distance,
     make_serverrec,
     validate_idc,
+)
 
+from .server_id import (
     ServerID,
 )
 

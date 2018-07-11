@@ -1,23 +1,19 @@
 #!/usr/bin/env python2
 # coding: utf-8
 
-from pykit.ectypes import server_id
+from .server_id import ServerID
+from .server import MountPointIndex
+from .server import _padding_0
 
 from .idbase import IDBase
-
-
-def _padding_0(s):
-    if str(s) != '0':
-        raise ValueError('padding must be "0", but:{s}'.format(s=s))
-    return str(s)
 
 
 class DriveID(IDBase):
 
     _attrs = (
-        ('server_id', 0, 12, server_id.ServerID),
+        ('server_id', 0, 12, ServerID),
         ('_padding_0', 12, 13, _padding_0),
-        ('mountpoint_index', 13, 16, server_id.MountPointIndex),
+        ('mountpoint_index', 13, 16, MountPointIndex),
     )
 
     _str_len = 16

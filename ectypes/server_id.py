@@ -113,7 +113,7 @@ def get_serverrec_str(serverrec):
     rst.append('mountpoints_count: {cnt}'.format(
                cnt=len(serverrec['mountpoints'])))
 
-    rst.append('allocated_drive_count:{cnt}'.format(
+    rst.append('allocated_drive_count: {cnt}'.format(
         cnt=len(serverrec['allocated_drive'])))
 
     return '; '.join(rst)

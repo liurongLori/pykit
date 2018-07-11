@@ -5,9 +5,9 @@ import unittest
 
 from pykit import ectypes
 from pykit import ututil
-from pykit import DriveID
+from pykit.ectypes import DriveID
 
-dd = utunit.dd
+dd = ututil.dd
 
 
 class TestEctypesDriveID(unittest.TestCase):

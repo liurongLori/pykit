@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 # coding: utf-8
 
-from pykit import server_id
+from pykit.ectypes import server_id
 
 from .idbase import IDBase
 
